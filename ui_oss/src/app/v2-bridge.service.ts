@@ -26,6 +26,22 @@ export class V2BridgeService implements OnDestroy {
   private sub?: Subscription;
   private readyTimer?: ReturnType<typeof setInterval>;
 
+  /**
+   * The feature the shell most recently asked us to show. When our own router
+   * settles on this same feature it's just the echo of a shell-driven nav, so we
+   * must NOT report it back up — doing so ping-pongs shell<->iframe and trips the
+   * browser's "Too many calls to Location or History APIs" throttle.
+   */
+  private lastFeatureFromShell: string | null = null;
+
+  /**
+   * False until the shell has sent its first `shell:navigate`. While embedded
+   * the shell owns the initial screen, so our own bootstrap redirect ('' ->
+   * dashboard) must NOT be reported up — otherwise it overwrites the URL the
+   * user actually navigated to (e.g. /v2/settings gets clobbered to dashboard).
+   */
+  private shellHasNavigated = false;
+
   /** True when running embedded in the shell rather than standalone. */
   readonly embedded = window.parent !== window;
 
@@ -39,6 +55,15 @@ export class V2BridgeService implements OnDestroy {
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => {
         const feature = e.urlAfterRedirects.split('?')[0].split('/').filter(Boolean)[0] ?? '';
+        // Until the shell has driven us once, any navigation is just our own
+        // bootstrap default — the shell decides the initial screen, so stay quiet.
+        if (!this.shellHasNavigated) return;
+        // Swallow the echo of a shell-initiated navigation; only report
+        // navigations that originated INSIDE v2 (in-app links, redirects).
+        if (feature === this.lastFeatureFromShell) {
+          this.lastFeatureFromShell = null;
+          return;
+        }
         this.post({ v: PROTOCOL_VERSION, type: 'v2:navigated', feature });
       });
 
@@ -66,8 +91,21 @@ export class V2BridgeService implements OnDestroy {
     if (e.data.v !== PROTOCOL_VERSION) return; // version skew: ignore (Phase 5)
 
     this.stopAnnouncing(); // the shell is clearly listening now
+    // Remember what the shell asked for so the resulting NavigationEnd isn't
+    // echoed back up (see the router.events subscription above).
+    const feature = e.data.feature;
+    this.shellHasNavigated = true; // shell is now the source of truth
+    this.lastFeatureFromShell = feature;
     // postMessage fires outside Angular's zone; re-enter so routing triggers CD.
-    this.zone.run(() => this.router.navigateByUrl('/' + e.data.feature));
+    this.zone.run(() =>
+      this.router.navigateByUrl('/' + feature).then((navigated) => {
+        // Same-URL navigations are dropped (no NavigationEnd to clear the
+        // guard), so clear it here to avoid muting a later genuine v2 nav.
+        if (!navigated && this.lastFeatureFromShell === feature) {
+          this.lastFeatureFromShell = null;
+        }
+      }),
+    );
   };
 
   private post(msg: V2ToShell): void {

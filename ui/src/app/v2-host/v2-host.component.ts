@@ -48,6 +48,15 @@ export class V2HostComponent implements OnInit, OnDestroy {
 
   private ready = false;
   private pendingFeature: string | null = null;
+
+  /** Last feature we sent down to the iframe — avoids re-pushing the same screen. */
+  private lastSentFeature: string | null = null;
+  /**
+   * Last feature the iframe reported. The shell mirrors it into its own URL,
+   * which re-fires paramMap; we must NOT push that straight back down or shell
+   * and iframe ping-pong and trip the History API throttle.
+   */
+  private lastFeatureFromV2: string | null = null;
   private sub?: Subscription;
   private handshakeTimer?: ReturnType<typeof setTimeout>;
   private readonly handshakeTimeoutMs = 8000;
@@ -66,6 +75,12 @@ export class V2HostComponent implements OnInit, OnDestroy {
     this.sub = this.route.paramMap.subscribe((p) => {
       const feature = p.get('feature') || '';
       this.pendingFeature = feature; // latest-wins for rapid switching
+      // If this route change is just the shell mirroring a v2-originated nav,
+      // swallow it — pushing it back down would loop.
+      if (feature === this.lastFeatureFromV2) {
+        this.lastFeatureFromV2 = null;
+        return;
+      }
       this.push(feature);
     });
 
@@ -81,6 +96,9 @@ export class V2HostComponent implements OnInit, OnDestroy {
   retry(): void {
     this.ready = false;
     this.status = 'loading';
+    // The iframe reloads to its default screen, so forget what we last sent —
+    // otherwise the post-reload re-push would be suppressed as a duplicate.
+    this.lastSentFeature = null;
     this.armHandshakeTimeout();
     // Force the iframe to reload the v2 app.
     const el = this.frame.nativeElement;
@@ -108,7 +126,11 @@ export class V2HostComponent implements OnInit, OnDestroy {
           break;
 
         case 'v2:navigated':
-          // Keep the shell URL in sync without adding history entries.
+          // The iframe is already on this feature; record it so the resulting
+          // shell route change isn't bounced back down, then mirror the URL
+          // without adding history entries.
+          this.lastFeatureFromV2 = e.data.feature;
+          this.lastSentFeature = e.data.feature;
           this.router.navigate(['/v2', e.data.feature], { replaceUrl: true });
           break;
 
@@ -123,6 +145,8 @@ export class V2HostComponent implements OnInit, OnDestroy {
 
   private push(feature: string): void {
     if (!this.ready || !feature) return;
+    if (feature === this.lastSentFeature) return; // already showing it
+    this.lastSentFeature = feature;
     const msg: ShellToV2 = {
       v: PROTOCOL_VERSION,
       type: 'shell:navigate',
