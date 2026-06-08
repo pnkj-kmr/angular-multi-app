@@ -1,0 +1,90 @@
+:host {
+  display: block;
+  height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0f172a;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.shell-header {
+  height: 56px;
+  flex: 0 0 56px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.25rem;
+  background: #1976d2;
+  color: #fff;
+}
+.brand { font-weight: 700; font-size: 1.05rem; }
+.tag {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.shell-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0; /* let the content area own its own scroll/height */
+}
+
+.shell-sidebar {
+  flex: 0 0 220px;
+  background: #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+}
+.group {
+  margin: 1rem 0.5rem 0.35rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  margin: 0.1rem 0;
+  border-radius: 6px;
+  color: #334155;
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+.item:hover { background: #e2e8f0; }
+.item.active { background: #1976d2; color: #fff; }
+.badge {
+  margin-left: auto;
+  font-size: 0.62rem;
+  background: #6366f1;
+  color: #fff;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+}
+
+.shell-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* The v2 host fills this area; legacy pages get their own padding. */
+  display: flex;
+  flex-direction: column;
+}
+/* The <router-outlet> element is just an anchor — the routed component is
+   rendered as its next sibling. Collapse the outlet so it doesn't claim a
+   flex slot (which would push the real content down). */
+.shell-content > router-outlet {
+  display: none;
+}
+.shell-content > router-outlet + * {
+  flex: 1 1 auto;
+  min-height: 0;
+}

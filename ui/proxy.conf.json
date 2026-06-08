@@ -1,0 +1,8 @@
+{
+  "/v2-app": {
+    "target": "http://127.0.0.1:4300",
+    "secure": false,
+    "ws": true,
+    "logLevel": "debug"
+  }
+}

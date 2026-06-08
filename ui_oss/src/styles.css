@@ -1,0 +1,9 @@
+/* Global styles for the v2 app (also applies inside the shell iframe). */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}

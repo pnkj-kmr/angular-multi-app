@@ -1,0 +1,9 @@
+/* Global styles for the shell. */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}

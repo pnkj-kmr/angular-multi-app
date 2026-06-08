@@ -1,0 +1,20 @@
+<div class="v2-host">
+  <!-- Persistent iframe: mounted once, kept alive across menu switches. -->
+  <iframe
+    #frame
+    src="/v2-app/"
+    title="New features (v2)"
+    (load)="onFrameLoad()"
+    [class.hidden]="status !== 'ready'"
+  ></iframe>
+
+  <div class="overlay" *ngIf="status === 'loading'">
+    <div class="spinner"></div>
+    <p>Loading…</p>
+  </div>
+
+  <div class="overlay" *ngIf="status === 'error'">
+    <p class="err">Couldn’t load this screen.</p>
+    <button type="button" (click)="retry()">Retry</button>
+  </div>
+</div>

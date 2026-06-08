@@ -1,0 +1,14 @@
+<div class="v2-shell">
+  @if (standalone) {
+    <nav class="v2-nav">
+      <strong>ui_oss (Angular 21)</strong>
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a routerLink="/reports" routerLinkActive="active">Reports</a>
+      <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      <span class="badge">standalone</span>
+    </nav>
+  }
+  <main class="v2-content">
+    <router-outlet />
+  </main>
+</div>
